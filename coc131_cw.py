@@ -1,4 +1,10 @@
 import numpy as np
+from PIL import Image
+from sklearn.datasets import load_files
+
+import pickle
+# later...
+
 
 # Please write the optimal hyperparameter values you obtain in the global variable 'optimal_hyperparm' below. This
 # variable should contain the values when I look at your submission. I should not have to run your code to populate this
@@ -6,6 +12,28 @@ import numpy as np
 optimal_hyperparam = {}
 
 class COC131:
+    #samples
+    x = None
+    #labels
+    y = None
+    with open('dataset.pkl','rb') as f:
+        x, y = pickle.load(f)
+
+    @staticmethod
+    def _process_file(filename):
+        res1 = np.zeros(1)
+        res2 = ''
+        if filename is None:
+            return res1, res2
+        img = Image.open(filename)
+
+        img = img.resize((32, 32), Image.LANCZOS)
+        arr = np.array(img, dtype=float)
+        res1 = arr.flatten(order='C')
+        clean = filename.replace('\\', '/')
+        res2  = clean.split('/')[-2]
+        return res1, res2
+    
     def q1(self, filename=None):
         """
         This function should be used to load the data. To speed-up processing in later steps, lower resolution of the
@@ -20,11 +48,28 @@ class COC131:
         :return res2: a string containing the class name for the image in file 'filename'. This string should be same as
         one of the folder names in the originally shared dataset.
         """
+        #check if key variables have been initialised already. 
+        if self.x is not None and self.y is not None:
+            print("Skipping complete data processing step")
+            return self._process_file(filename=filename)
+        
+        print("Commencing complete data processing")
+        data = load_files('EuroSAT_RGB', load_content=False)
+        file_paths, label_indices = data['filenames'], data['target']
 
-        res1 = np.zeros(1)
-        res2 = ''
+        samples = []
+        for fp in file_paths:
+            img = Image.open(fp).resize((32, 32), Image.LANCZOS)
+            arr = np.array(img, dtype=float)
+            samples.append(arr.flatten(order='C'))
 
-        return res1, res2
+        X = np.stack(samples)
+        y = label_indices.astype(float)    
+        with open('dataset.pkl','wb') as f:
+            pickle.dump((X, y), f)
+        self.x, self.y = X, y
+
+        return self._process_file(filename=filename)
 
 
     def q2(self, inp):
@@ -111,3 +156,8 @@ class COC131:
         res = np.zeros(1)
 
         return res
+
+
+# coc131 = COC131()
+# print(coc131.q1())
+# print(coc131.q1("EuroSAT_RGB\\AnnualCrop\\AnnualCrop_1.jpg"))
