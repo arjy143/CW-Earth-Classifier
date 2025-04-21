@@ -19,6 +19,7 @@ class COC131:
     with open('dataset.pkl','rb') as f:
         x, y = pickle.load(f)
 
+    #static function for separating the individual file extraction logic
     @staticmethod
     def _process_file(filename):
         res1 = np.zeros(1)
@@ -53,6 +54,7 @@ class COC131:
             print("Skipping complete data processing step")
             return self._process_file(filename=filename)
         
+        #if x and y have not been initialised, then go through the whole process
         print("Commencing complete data processing")
         data = load_files('EuroSAT_RGB', load_content=False)
         file_paths, label_indices = data['filenames'], data['target']
