@@ -1,7 +1,10 @@
 import numpy as np
 from PIL import Image
 from sklearn.datasets import load_files
-
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import LinearSVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
 import pickle
 # later...
 
@@ -84,8 +87,12 @@ class COC131:
         have the same dimensions as the original data
         :return res1: sklearn object used for standardization.
         """
-        res1 = np.zeros(1)
-        res2 = ''
+
+        standardScaler = StandardScaler()
+        data = standardScaler.fit_transform(inp)
+
+        res1 = standardScaler
+        res2 = data * 2.5
 
         return res2, res1
 
@@ -102,13 +109,25 @@ class COC131:
         :return: The function should return 1 model object and 3 numpy arrays which contain the loss, training accuracy
         and testing accuracy after each training iteration for the best model you found.
         """
-
-        # normalize data
-
         res1 = object()
         res2 = np.zeros(1)
         res3 = np.zeros(1)
         res4 = np.zeros(1)
+
+        if test_size is None:
+            test_size = 0.2
+        if pre_split_data is None:
+            x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=test_size)
+        else:
+            x_train, x_test, y_train, y_test = pre_split_data 
+        if hyperparam is None:
+            hyperparam = {"max_iter":200}
+
+        res1 = MLPClassifier(hyperparam)
+        res1.fit(x_train, y_train)
+        res2 = res1.loss_
+        res3.append(res1.score(x_train, y_train))
+        res4.append(res1.score(x_train, y_train))
 
         return res1, res2, res3, res4
 
