@@ -127,7 +127,7 @@ class COC131:
         res1.fit(x_train, y_train)
         res2 = res1.loss_
         res3.append(res1.score(x_train, y_train))
-        res4.append(res1.score(x_train, y_train))
+        res4.append(res1.score(x_test, y_test))
 
         return res1, res2, res3, res4
 
