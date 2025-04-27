@@ -140,11 +140,22 @@ class COC131:
 
         :return: res should be the data you visualized.
         """
-
+        X_train, X_test, y_train, y_test = train_test_split(
+            self.x, self.y, test_size=0.2, random_state=0
+        )
+        base_params = dict(self.best_params)
+        base_params.pop('alpha', None)
         alpha_values = [0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 50, 100]
 
-        res = np.zeros(1)
+        results = []
+        for a in alpha_values:
+            clf = MLPClassifier(random_state=0, **base_params, alpha=a)
+            clf.fit(X_train, y_train)
+            train_acc = clf.score(X_train, y_train)
+            test_acc  = clf.score(X_test,  y_test)
 
+            results.append((a, train_acc, test_acc))
+        res = np.array(results, dtype=float)
         return res
 
     def q5(self):
