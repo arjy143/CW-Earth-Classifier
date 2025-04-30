@@ -121,13 +121,21 @@ class COC131:
         else:
             x_train, x_test, y_train, y_test = pre_split_data 
         if hyperparam is None:
-            hyperparam = {"max_iter":200}
+            hyperparam = {"max_iter":50}
+        n_epochs = int(hyperparam.pop('max_iter', 50)) 
 
-        res1 = MLPClassifier(hyperparam)
-        res1.fit(x_train, y_train)
-        res2 = res1.loss_
-        res3.append(res1.score(x_train, y_train))
-        res4.append(res1.score(x_test, y_test))
+        res1 = MLPClassifier(
+        warm_start=True,      
+        max_iter=1,                   
+        random_state=0,
+        **hyperparam)
+
+        res2, res3, res4 = [], [], []    
+        for _ in range(n_epochs):                   
+            res1.fit(x_train, y_train)                
+            res2.append(res1.loss_)
+            res3.append(res1.score(x_train, y_train))
+            res4.append(res1.score(x_test,  y_test))
 
         return res1, res2, res3, res4
 
