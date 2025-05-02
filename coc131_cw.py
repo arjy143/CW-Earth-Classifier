@@ -6,6 +6,8 @@ from sklearn.svm import LinearSVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score
 from scipy.stats import ttest_rel
+from sklearn.manifold import LocallyLinearEmbedding
+
 import pickle
 # later remove pickle
 
@@ -24,7 +26,7 @@ class COC131:
         x, y = pickle.load(f)
 
     #need to make another class member, self.best_params
-    
+
     #static function for separating the individual file extraction logic
     @staticmethod
     def _process_file(filename):
@@ -204,10 +206,10 @@ class COC131:
 
         :return: The function should return the data you visualize.
         """
-
-        res = np.zeros(1)
-
+        lle = LocallyLinearEmbedding(n_neighbors=10, n_components=2, random_state=0)
+        res = lle.fit_transform(self.x)
         return res
+
 
 
 # coc131 = COC131()
