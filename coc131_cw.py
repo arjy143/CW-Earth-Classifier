@@ -4,9 +4,10 @@ from sklearn.datasets import load_files
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import LinearSVC
 from sklearn.neural_network import MLPClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cross_val_score
+from scipy.stats import ttest_rel
 import pickle
-# later...
+# later remove pickle
 
 
 # Please write the optimal hyperparameter values you obtain in the global variable 'optimal_hyperparm' below. This
@@ -22,6 +23,8 @@ class COC131:
     with open('dataset.pkl','rb') as f:
         x, y = pickle.load(f)
 
+    #need to make another class member, self.best_params
+    
     #static function for separating the individual file extraction logic
     @staticmethod
     def _process_file(filename):
@@ -178,11 +181,20 @@ class COC131:
         'Splitting method impacted performance' and 'Splitting method had no effect'.
         """
 
-        res1 = 0
-        res2 = 0
-        res3 = 0
-        res4 = ''
+        clf = MLPClassifier(random_state=0, **self.best_params)
+        #5 fold without stratification
+        kf = KFold(n_splits=5, shuffle=True, random_state=0)
+        scores_kf = cross_val_score(clf, self.x, self.y, cv=kf)
+        #with stratification
+        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+        scores_skf = cross_val_score(clf, self.x, self.y, cv=skf)
 
+        res1 = np.mean(scores_kf)
+        res2 = np.mean(scores_skf)
+
+        _, res3 = ttest_rel(scores_kf, scores_skf)
+        res4 = "Splitting method impacted performance" if res3 < 0.01 else "Splitting method had no effect"
+        
         return res1, res2, res3, res4
 
     def q6(self):
