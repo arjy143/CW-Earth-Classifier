@@ -169,6 +169,7 @@ class COC131:
         )
         base_params = dict(self.best_params)
         base_params.pop('alpha', None)
+        base_params['max_iter'] = 50
         alpha_values = [0, 0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 50, 100]
 
         results = []
