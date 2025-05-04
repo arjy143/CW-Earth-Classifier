@@ -197,7 +197,7 @@ class COC131:
         clf = MLPClassifier(random_state=0, **self.best_params)
         #5 fold without stratification
         kf = KFold(n_splits=5, shuffle=True, random_state=0)
-        scores_kf = cross_val_score(clf, self.,standardised_x self.y, cv=kf)
+        scores_kf = cross_val_score(clf, self.standardised_x, self.y, cv=kf)
         #with stratification
         skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
         scores_skf = cross_val_score(clf, self.standardised_x, self.y, cv=skf)
