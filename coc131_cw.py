@@ -22,10 +22,13 @@ class COC131:
     x = None
     #labels
     y = None
+
+    standardised_x = None
+
+    best_params = None
+
     with open('dataset.pkl','rb') as f:
         x, y = pickle.load(f)
-
-    #need to make another class member, self.best_params
 
     #static function for separating the individual file extraction logic
     @staticmethod
@@ -98,8 +101,8 @@ class COC131:
 
         res1 = standardScaler
         res2 = data * 2.5
-
-        return res2, res1
+        self.standardised_x = res2
+        return res1, res2
 
     def q3(self, test_size=None, pre_split_data=None, hyperparam=None):
         """
@@ -122,11 +125,19 @@ class COC131:
         if test_size is None:
             test_size = 0.2
         if pre_split_data is None:
-            x_train, x_test, y_train, y_test = train_test_split(self.x, self.y, test_size=test_size)
+            x_train, x_test, y_train, y_test = train_test_split(self.standardised_x, self.y, test_size=test_size)
         else:
             x_train, x_test, y_train, y_test = pre_split_data 
         if hyperparam is None:
-            hyperparam = {"max_iter":50}
+            hyperparam = {
+                        'hidden_layer_sizes': (200,),
+                        'activation'       : 'relu',
+                        'solver'           : 'adam',
+                        'alpha'            : 1e-4,
+                        'learning_rate_init': 1e-3,
+                        'batch_size'       : 'auto',
+                        'max_iter'         : 50
+                        }
         n_epochs = int(hyperparam.pop('max_iter', 50)) 
 
         res1 = MLPClassifier(
@@ -154,7 +165,7 @@ class COC131:
         :return: res should be the data you visualized.
         """
         X_train, X_test, y_train, y_test = train_test_split(
-            self.x, self.y, test_size=0.2, random_state=0
+            self.standardised_x, self.y, test_size=0.2, random_state=0
         )
         base_params = dict(self.best_params)
         base_params.pop('alpha', None)
@@ -186,10 +197,10 @@ class COC131:
         clf = MLPClassifier(random_state=0, **self.best_params)
         #5 fold without stratification
         kf = KFold(n_splits=5, shuffle=True, random_state=0)
-        scores_kf = cross_val_score(clf, self.x, self.y, cv=kf)
+        scores_kf = cross_val_score(clf, self.,standardised_x self.y, cv=kf)
         #with stratification
         skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
-        scores_skf = cross_val_score(clf, self.x, self.y, cv=skf)
+        scores_skf = cross_val_score(clf, self.standardised_x, self.y, cv=skf)
 
         res1 = np.mean(scores_kf)
         res2 = np.mean(scores_skf)
@@ -206,8 +217,8 @@ class COC131:
 
         :return: The function should return the data you visualize.
         """
-        lle = LocallyLinearEmbedding(n_neighbors=10, n_components=2, random_state=0)
-        res = lle.fit_transform(self.x)
+        lle = LocallyLinearEmbedding(n_neighbors=100, n_components=2, random_state=0)
+        res = lle.fit_transform(self.standardised_x)
         return res
 
 
