@@ -115,7 +115,7 @@ class COC131:
 
         #using if statements for setting defaults
         if test_size is None:
-            test_size = 0.2
+            test_size = 0.3
         if pre_split_data is None:
             x_train, x_test, y_train, y_test = train_test_split(self.standardised_x, self.y, test_size=test_size)
         else:
