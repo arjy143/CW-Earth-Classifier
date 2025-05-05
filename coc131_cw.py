@@ -8,27 +8,26 @@ from sklearn.model_selection import train_test_split, KFold, StratifiedKFold, cr
 from scipy.stats import ttest_rel
 from sklearn.manifold import LocallyLinearEmbedding
 
-import pickle
-# later remove pickle
-
-
 # Please write the optimal hyperparameter values you obtain in the global variable 'optimal_hyperparm' below. This
 # variable should contain the values when I look at your submission. I should not have to run your code to populate this
 # variable.
-optimal_hyperparam = {}
+optimal_hyperparam = {'hidden_layer_sizes': (100, 100),
+ 'solver': 'sgd',
+ 'alpha': 0.5,
+ 'learning_rate_init': 0.001,
+ 'batch_size': 64,
+ 'momentum': 0.8,
+ 'max_iter': 50}
 
 class COC131:
     #samples
     x = None
     #labels
     y = None
-
+    #store standardised samples
     standardised_x = None
-
+    #store best params found
     best_params = None
-
-    with open('dataset.pkl','rb') as f:
-        x, y = pickle.load(f)
 
     #static function for separating the individual file extraction logic
     @staticmethod
@@ -60,13 +59,7 @@ class COC131:
         :return res2: a string containing the class name for the image in file 'filename'. This string should be same as
         one of the folder names in the originally shared dataset.
         """
-        #check if key variables have been initialised already. 
-        if self.x is not None and self.y is not None:
-            print("Skipping complete data processing step")
-            return self._process_file(filename=filename)
-        
-        #if x and y have not been initialised, then go through the whole process
-        print("Commencing complete data processing")
+        #logic for loading dataset
         data = load_files('EuroSAT_RGB', load_content=False)
         file_paths, label_indices = data['filenames'], data['target']
 
@@ -78,12 +71,9 @@ class COC131:
 
         X = np.stack(samples)
         y = label_indices.astype(float)    
-        with open('dataset.pkl','wb') as f:
-            pickle.dump((X, y), f)
         self.x, self.y = X, y
 
         return self._process_file(filename=filename)
-
 
     def q2(self, inp):
         """
@@ -96,10 +86,9 @@ class COC131:
         :return res1: sklearn object used for standardization.
         """
 
-        standardScaler = StandardScaler()
-        data = standardScaler.fit_transform(inp)
-
-        res1 = standardScaler
+        res1 = StandardScaler()
+        data = res1.fit_transform(inp)
+        #since it is initially standardised with (mean=0, std=1), multiplying by 2.5 gives std=2.5
         res2 = data * 2.5
         self.standardised_x = res2
         return res1, res2
@@ -117,11 +106,14 @@ class COC131:
         :return: The function should return 1 model object and 3 numpy arrays which contain the loss, training accuracy
         and testing accuracy after each training iteration for the best model you found.
         """
+
+        #hyperparameter optimisation is done outside of the function, so that I can visualise each attempt
         res1 = object()
         res2 = np.zeros(1)
         res3 = np.zeros(1)
         res4 = np.zeros(1)
 
+        #using if statements for setting defaults
         if test_size is None:
             test_size = 0.2
         if pre_split_data is None:
@@ -140,10 +132,11 @@ class COC131:
                         }
         n_epochs = int(hyperparam.pop('max_iter', 50)) 
 
+        #warm start is used to maintain the weights learned in the last run.
+        #this allows the mlp to be run for 1 epoch repeatedly
         res1 = MLPClassifier(
         warm_start=True,    
         max_iter=1,                   
-        random_state=0,
         **hyperparam)
 
         res2, res3, res4 = [], [], []    
@@ -164,9 +157,11 @@ class COC131:
 
         :return: res should be the data you visualized.
         """
-        X_train, X_test, y_train, y_test = train_test_split(
+
+        x_train, x_test, y_train, y_test = train_test_split(
             self.standardised_x, self.y, test_size=0.2, random_state=0
         )
+        #using the best params found, but replacing alpha with the value to be tested
         base_params = dict(self.best_params)
         base_params.pop('alpha', None)
         base_params['max_iter'] = 50
@@ -174,12 +169,13 @@ class COC131:
 
         results = []
         for a in alpha_values:
-            clf = MLPClassifier(random_state=0, **base_params, alpha=a)
-            clf.fit(X_train, y_train)
-            train_acc = clf.score(X_train, y_train)
-            test_acc  = clf.score(X_test,  y_test)
-
+            clf = MLPClassifier(**base_params, alpha=a)
+            clf.fit(x_train, y_train)
+            train_acc = clf.score(x_train, y_train)
+            test_acc  = clf.score(x_test,  y_test)
             results.append((a, train_acc, test_acc))
+
+        #return an array of tuples with training and testing accuracy for each alpha value
         res = np.array(results, dtype=float)
         return res
 
@@ -195,18 +191,19 @@ class COC131:
         'Splitting method impacted performance' and 'Splitting method had no effect'.
         """
 
-        clf = MLPClassifier(random_state=0, **self.best_params)
+        classifier = MLPClassifier(**self.best_params)
         #5 fold without stratification
-        kf = KFold(n_splits=5, shuffle=True, random_state=0)
-        scores_kf = cross_val_score(clf, self.standardised_x, self.y, cv=kf)
+        kf = KFold(n_splits=5, shuffle=True)
+        kf_score = cross_val_score(classifier, self.standardised_x, self.y, cv=kf)
         #with stratification
-        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
-        scores_skf = cross_val_score(clf, self.standardised_x, self.y, cv=skf)
+        skf = StratifiedKFold(n_splits=5, shuffle=True)
+        skf_score = cross_val_score(classifier, self.standardised_x, self.y, cv=skf)
 
-        res1 = np.mean(scores_kf)
-        res2 = np.mean(scores_skf)
+        res1 = np.mean(kf_score)
+        res2 = np.mean(skf_score)
 
-        _, res3 = ttest_rel(scores_kf, scores_skf)
+        _, res3 = ttest_rel(kf_score, skf_score)
+        # < 1% chance of observing fold‐score difference under null hypothesis
         res4 = "Splitting method impacted performance" if res3 < 0.01 else "Splitting method had no effect"
         
         return res1, res2, res3, res4
@@ -218,12 +215,8 @@ class COC131:
 
         :return: The function should return the data you visualize.
         """
-        lle = LocallyLinearEmbedding(n_neighbors=100, n_components=2, random_state=0)
+
+        #projecting data onto 2D plane
+        lle = LocallyLinearEmbedding(n_neighbors=100, n_components=2)
         res = lle.fit_transform(self.standardised_x)
         return res
-
-
-
-# coc131 = COC131()
-# print(coc131.q1())
-# print(coc131.q1("EuroSAT_RGB\\AnnualCrop\\AnnualCrop_1.jpg"))
